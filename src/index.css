@@ -1,0 +1,30 @@
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: #f5f5f5;
+  color: #111;
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.chat-container {
+  background: white;
+  color: #111;
+}
+
+.chat-bubble-user {
+  background: #2563eb; /* כחול */
+  color: white;
+}
+
+.chat-bubble-ai {
+  background: #e5e7eb; /* אפור בהיר */
+  color: #111;
+}
+
+input, textarea {
+  background: white;
+  color: #111;
+}

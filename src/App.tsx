@@ -14,7 +14,7 @@ type YoutubeVideoResult = {
 
 type AgentChatResponse = {
     sessionId?: string;
-    reply?: string;     // אם אצלך זה נקרא אחרת—נתאים
+    reply?: string; // אם אצלך זה נקרא אחרת—נתאים
     missing?: string[]; // אופציונלי
     items?: YoutubeVideoResult[]; // התוצאות כשיש
 };
@@ -23,6 +23,12 @@ type ChatMsg = { role: "user" | "agent"; text: string };
 
 function randomSessionId() {
     return "s_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+}
+
+function joinUrl(base: string, path: string) {
+    const b = base.replace(/\/+$/, "");
+    const p = path.startsWith("/") ? path : `/${path}`;
+    return `${b}${p}`;
 }
 
 export default function App() {
@@ -34,6 +40,18 @@ export default function App() {
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<YoutubeVideoResult[] | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
+
+    // ✅ Backend base URL:
+    // 1) ב-Vercel תגדיר Environment Variable:
+    //    VITE_API_BASE_URL = https://ai-video-coach.onrender.com
+    // 2) אם לא הוגדר, נשתמש בברירת מחדל:
+    const API_BASE =
+        (import.meta as any).env?.VITE_API_BASE_URL?.toString().trim() ||
+        "https://ai-video-coach.onrender.com";
+
+    // ⚠️ הנתיב הזה חייב להתאים ל-Spring שלך
+    // אם אצלך זה שונה (למשל /chat או /api/chat), תשנה כאן.
+    const CHAT_PATH = "/api/agent/chat";
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,27 +69,32 @@ export default function App() {
         setLoading(true);
 
         try {
-            const res = await fetch("/api/agent/chat", {
+            const url = joinUrl(API_BASE, CHAT_PATH);
+
+            const res = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ sessionId, message: text }),
             });
 
-            console.log('Response status:', res.status);
-            console.log('Response headers:', res.headers);
+            console.log("Request URL:", url);
+            console.log("Response status:", res.status);
 
             if (!res.ok) {
                 const t = await res.text();
-                console.log('Error response:', t);
+                console.log("Error response:", t);
                 throw new Error(`HTTP ${res.status}: ${t}`);
             }
 
             const data: AgentChatResponse = await res.json();
-            console.log('API Response:', data); // Debug log
+            console.log("API Response:", data);
 
-            // התאמה: אם אצלך השדה נקרא "message" או "answer" במקום "reply"
             const replyText =
-                data.reply ?? (data as any).message ?? (data as any).answer ?? (data as any).assistantMessage ?? "קיבלתי. מה עוד תרצה להוסיף?";
+                data.reply ??
+                (data as any).message ??
+                (data as any).answer ??
+                (data as any).assistantMessage ??
+                "קיבלתי. מה עוד תרצה להוסיף?";
 
             setMessages((prev) => [...prev, { role: "agent", text: replyText }]);
 
